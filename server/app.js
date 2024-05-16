@@ -9,18 +9,33 @@ const io = new Server(server, {
         origin: 'http://localhost:3000',
         methods: ['GET', 'POST']
     }
-})
+}) 
+
+let users = []
 
 io.on('connection', (socket) => {
-    console.log('A user connected')
+    console.log(`A user connected ${socket.id}`)
+    socket.on('joinServer', (username) => {
+        console.log(username)
+        const user = {
+            username,
+            id: socket.id
+        }
+        users.push(user)
+        socket.broadcast.emit('userOnline', user)
+        io.emit('updatedUserList', users)
+    })
 
-    socket.on('joinRoom', (room) => {
+    socket.on('joinRoom', (room, cb) => {
         socket.join(room)
+        cb(messages[room])
+        socket.emit('joined', messages[room])
         console.log(`joined room ${room}`)
     })
 
     socket.on('disconnect', () => {
-        console.log('A user disconnected')
+        users = users.filter(u => u.id !== socket.id)
+        io.emit('updateUserList', users)
     })
 })
 
